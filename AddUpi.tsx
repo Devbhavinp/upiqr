@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Modal, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Button, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native'
+import { Storage } from 'expo-storage';
+import ModalUPI from './ModalUPI';
 
 const AddUpi = ({ UpiModalVisible, setUpiModalVisible }: any) => {
   const [newUPIData, setNewUPIData] = useState({
     userName: "",
-    upiId:""
+    upiId: ""
   })
 
   const Arr = [
@@ -16,53 +18,53 @@ const AddUpi = ({ UpiModalVisible, setUpiModalVisible }: any) => {
     setNewUPIData({ ...newUPIData, [name]: event })
   }
 
-  const handleSubmit = () => {
-    alert(JSON.stringify(newUPIData))
+  const handleSubmit = async () => {
+    const item = JSON.parse(await Storage.getItem({ key: `UPIDataList` })) || []
+    item.push(newUPIData)
+    await Storage.setItem({
+      key: `UPIDataList`,
+      value: JSON.stringify(item),
+    })
+    setUpiModalVisible(false);
   }
-  
-  return (
 
+  return (
     <View style={styles.centeredView}>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={UpiModalVisible}
-        onRequestClose={() => {
+      <ModalUPI {...{ UpiModalVisible, setUpiModalVisible }}>
+        <TouchableWithoutFeedback onPress={() => {
           setUpiModalVisible(!UpiModalVisible);
         }}>
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>ADD NEW UPI</Text>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalTitle}>ADD NEW UPI</Text>
 
-            {Arr.map((val) => (
+              {Arr.map((val, index) => (
+                <View key={index}>
+                  <Text style={styles.inputLabel}>{val.title}</Text>
+                  <SafeAreaView>
+                    <TextInput
+                      style={styles.input}
+                      onChangeText={(event) => onChangeText({ name: val.name, event })}
+                      value={newUPIData[val.name]}
+                    />
+                  </SafeAreaView>
+                </View>
+              ))}
+
               <View>
-                <Text style={styles.inputLabel}>{val.title}</Text>
-                <SafeAreaView>
-                  <TextInput
-                    style={styles.input}
-                    onChangeText={(event) => onChangeText({ name:val.name, event })}
-                    value={newUPIData[val.name]}
-                  />
-                </SafeAreaView>
+                <Button
+                  onPress={handleSubmit}
+                  title="ADD NEW UPI"
+                  color="#227AFF"
+                />
               </View>
-            ))}
-
-            <View>
-            <Button
-              onPress={handleSubmit}
-              title="ADD NEW UPI"
-              color="#227AFF"
-            />
             </View>
           </View>
-        </View>
-      </Modal>
-
-    </View>
-
+        </TouchableWithoutFeedback>
+      </ModalUPI>
+    </View >
   )
 }
-
 
 export default AddUpi
 

@@ -1,41 +1,62 @@
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import React,{useState} from 'react';
-import { Image, StyleSheet, Text, View, TouchableOpacity, ScrollView, Button, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, StyleSheet, Text, View, TouchableOpacity, ScrollView, Button } from 'react-native';
 import AddUpi from './AddUpi';
+import { Storage } from 'expo-storage';
+import ShowQr from './ShowQr';
 
 export default function App() {
   const [UpiModalVisible, setUpiModalVisible] = useState(false);
+  const [modalShowQr, setModalShowQr] = useState(false)
   const [fontsLoaded] = useFonts({
     'Nunito-Regular': require('./assets/fonts/Nunito-Regular.ttf'),
     'Nunito-Medium': require('./assets/fonts/Nunito-Medium.ttf'),
     'Nunito-Bold': require('./assets/fonts/Nunito-Bold.ttf'),
   });
-  const onPress = () => { };
-  const arr = [1, 1, 1, 1, 1, 1, 11, 1];
+  const [allData, setAllData] = useState([])
+  const [showQrData, setShowQrData] = useState({})
+  const onPress = async (value: any) => {
+    setUpiModalVisible(true)
+  };
+
+  useEffect(() => {
+    (async () => {
+      const item = JSON.parse(await Storage.getItem({ key: `UPIDataList` })) || []
+      setAllData(item)
+    })();
+  })
 
   const onPressAddUpi = () => {
     setUpiModalVisible(true)
   }
-  
-  const onPressShowQr = () => {}
 
-  const temp = (): any => arr.map((value) => {
-    return (
-      <TouchableOpacity style={styles.button} onPress={onPress} >
-        <View style={styles.cardContainer}>
-          <Image style={{ width: 40, height: 40 }} source={require('./assets/scan.png')} />
-          <View style={styles.cardTexts}>
-            <Text style={styles.cardTitle}>Axis Bank</Text>
-            <Text style={styles.cardSubText}>abcd@upi</Text>
+  const onPressShowQr = async (value: any) => {
+    // await Storage.removeItem({ key: `UPIDataList` })
+    // alert('clear data' + + value)
+    setShowQrData(value)
+    setModalShowQr(true)
+  }
+
+  const viewUPIList = (): any => {
+    return allData && allData.length ? allData.map((value: any, index: number) => (
+      <TouchableOpacity key={index} style={styles.button} onPress={() => onPress(value)} >
+        <View style={{ justifyContent: 'space-between', flexDirection: 'row' }}>
+          <View style={styles.cardContainer}>
+            <Image style={{ width: 40, height: 40 }} source={require('./assets/scan.png')} />
+            <View style={styles.cardTexts}>
+              <Text style={styles.cardTitle}>{value?.userName}</Text>
+              <Text style={styles.cardSubText}>{value?.upiId}</Text>
+            </View>
           </View>
           <View>
-            <Text style={styles.ShowQr} onPress={onPressShowQr}>Show QR</Text>
+            <Text style={styles.ShowQr} onPress={() => onPressShowQr(value)}>Show QR</Text>
           </View>
         </View>
       </TouchableOpacity>
-    )
-  })
+    ))
+      : (<View><Text>No Data</Text></View>)
+  }
 
 
   if (!fontsLoaded) {
@@ -46,28 +67,32 @@ export default function App() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Image style={{ width: 50, height: 50 }} source={require('./assets/logo.png')} />
+          {modalShowQr ?
+            <TouchableOpacity onPress={() => setModalShowQr(false)}><Image style={{ width: 50, height: 50 }} source={require('./assets/back.png')} /></TouchableOpacity>
+            : <Image style={{ width: 50, height: 50 }} source={require('./assets/logo.png')} />}
           <Image style={{ width: 28, height: 28 }} source={require('./assets/share.png')} />
         </View>
-        <Text style={styles.headerText}>Hello, Good Morning</Text>
-        <ScrollView style={styles.listWrapper}>
-          {temp()}
-        </ScrollView>
-        <View style={styles.footer}>
-          <Button
-            onPress={onPressAddUpi}
-            title="ADD NEW UPI"
-            color="#C1C1C1"
-            />
-        </View>
-        <StatusBar style="auto" />
-        {UpiModalVisible && <View>
-           <AddUpi {...{UpiModalVisible, setUpiModalVisible}} />
-           </View>
-           }
+        {modalShowQr ? <ShowQr {...{ showQrData }} /> :
+          <>
+            <Text style={styles.headerText}>Hello, Good Morning</Text>
+            <ScrollView style={styles.listWrapper}>
+              {viewUPIList()}
+            </ScrollView>
+            {UpiModalVisible &&
+              <AddUpi {...{ UpiModalVisible, setUpiModalVisible }} />
+            }
+            <View style={styles.footer}>
+              <Button
+                onPress={onPressAddUpi}
+                title="ADD NEW UPI"
+                color="#C1C1C1"
+              />
+            </View>
+            <StatusBar style="auto" />
+          </>
+        }
       </View>
-        
-        );
+    );
   }
 }
 
@@ -113,7 +138,7 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   cardContainer: {
-    flexDirection: 'row'
+    flexDirection: 'row',
   },
   cardTexts: {
     marginLeft: 15
@@ -132,13 +157,11 @@ const styles = StyleSheet.create({
   ShowQr: {
     color: "#227AFF",
     paddingTop: 10,
-    paddingLeft: 60
   },
   footer: {
     width: "100%",
     padding: 18,
     color: "#FFFFFF",
-
   },
 
 });
